@@ -1,5 +1,31 @@
 Kernel Module Installation Instructions
-Arati Banerjee, Huong Dang, Jorge Brandon Nunez
+Arati Banerjee, Huong Dang, Jorge B. Nunez
+
+
+To use the installation script:
+
+1.  Open your terminal.
+
+2.  Navigate to the directory with the two source files and the Makefile in it.
+
+3.  Type
+        chmod +x ./install.sh
+        chmod +x ./uninstall.sh
+    into the terminal to make the install and uninstall scripts executable.
+
+4.  Type
+        ./install.sh
+    into the terminal to install the modules and create the character device
+    files automatically. If prompted, type your administrative password for
+    sudo access.
+
+5.  Type
+        ./uninstall.sh
+    into the terminal to delete the device files, uninstall the modules, and
+    clean the Makefile contents.
+
+
+To install the devices manually:
 
 1.  Open your terminal.
 
