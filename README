@@ -1,0 +1,62 @@
+Kernel Module Installation Instructions
+Arati Banerjee, Huong Dang, Jorge Brandon Nunez
+
+1.  Open your terminal.
+
+2.  Navigate to the directory with the two source files and the Makefile in it.
+
+3.  Type
+    	make
+    into the terminal to build the kernel modules.
+
+4.  Type
+    	sudo insmod charkmod-in.ko
+    	sudo insmod charkmod-out.ko
+    into the terminal to install the kernel modules, in that specific order.
+
+5.  Type
+    	dmesg
+    into the terminal to determine the major numbers for the kernel modules.
+    For example, our VM usually assigned charkmod-in the major number 246,
+    and it assigned charkmod-out the major number 245.
+
+6.  Type
+    	sudo mknod /dev/charkmod-in c <major_number> 0
+    	sudo mknod /dev/charkmod-out c <major_number> 0
+    into the terminal to create the separate virtual devices.
+    For example, in our VM, we typed
+    	sudo mknod /dev/charkmod-in c 246 0
+    	sudo mknod /dev/charkmod-out c 245 0
+    to create our devices.
+
+7.  Type
+    	sudo chmod 777 /dev/charkmod-in
+    	sudo chmod 777 /dev/charkmod-out
+    into the terminal to allow global read-write access, for the sake of
+    convenience. If you know your permissions, feel free to use chmod as you
+    desire.
+
+8.  Type
+    	sudo chmod +x ./tester-in.sh
+    	sudo chmod +x ./tester-out.sh
+    into the terminal to allow execution of our bash scripts. These scripts
+    barrage the device interfaces endlessly with read-write demands when
+    executed.
+
+9.  Open a second terminal and navigate to the same working directory the first
+    terminal is located in. Then, in one terminal, type
+    	sudo ./tester-in.sh
+    and in the other terminal, type
+    	sudo ./tester-out.sh
+    to force a stream of mutex conflicts. When you want to let the VM breathe,
+    press CTRL-C on each terminal window to stop the looping scripts.
+
+10. To uninstall everything, type the following commands in one of the
+    terminals IN THIS ORDER (because charkmod-out depends on charkmod-in):
+    	sudo rm /dev/charkmod-out
+    	sudo rm /dev/charkmod-in
+    	sudo rmmod charkmod-out
+    	sudo rmmod charkmod-in
+    	make clean
+
+Congratulations! You've tested our kernel module successfully!
