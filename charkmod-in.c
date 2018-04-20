@@ -79,7 +79,7 @@ int init_module(void)
 	for (i = 0; i < MAX_SIZE; i++) {
 		data[i] = '\0';
 	}
-	
+
 	mutex_init(&buffer_mutex);
 
 	return 0;
@@ -92,11 +92,11 @@ int init_module(void)
 void cleanup_module(void)
 {
 	printk(KERN_INFO "charkmod-in: removing module.\n");
-	
+
 	unregister_chrdev(major_number, DEVICE_NAME);
-	
+
 	mutex_destroy(&buffer_mutex);
-	
+
 	return;
 }
 
@@ -110,9 +110,9 @@ static int open(struct inode *inodep, struct file *filep)
 		printk(KERN_ALERT "charkmod-in: device in use by another process\n");
 		return -EBUSY;
 	}
-	
+
 	printk(KERN_INFO "charkmod-in: device opened for writing.\n");
-	
+
 	return 0;
 }
 
@@ -123,9 +123,9 @@ static int open(struct inode *inodep, struct file *filep)
 static int close(struct inode *inodep, struct file *filep)
 {
 	mutex_unlock(&buffer_mutex);
-	
+
 	printk(KERN_INFO "charkmod-in: device closed.\n");
-	
+
 	return 0;
 }
 
@@ -137,14 +137,14 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 {
 	int i, j, exists, prev_size;
 	char checker[3], temp[MAX_SIZE];
-	
+
 	printk(KERN_INFO "charkmod-in: something wrote to device.\n");
-	
+
 	// Clear temp buffer.
 	for (i = 0; i < MAX_SIZE; i++) {
 		temp[i] = '\0';
 	}
-	
+
 	// Count how many times 'UCF' shows up in input string.
 	for (i = 0, exists = 0; i < len - 2; i++) {
 		checker[0] = buffer[i];
@@ -157,19 +157,39 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 		checker[1] = '\0';
 		checker[2] = '\0';
 	}
-	
+
 	printk(KERN_INFO "charkmod-in: there exist %d instances of \'UCF\' in the input.\n", exists);
-	
+
 	// Sends message to kernel when there is less space than offered data
 	if (data_size + len > MAX_SIZE) {
 		printk(KERN_INFO "charkmod-in: not enough space! Dropping what's left.\n");
 	}
 
+	int upper_lim = len;
 	// Writes the data to the device
-	for (i = data_size, prev_size = data_size, j = 0; i < MAX_SIZE; i++) {
-		if (i >= prev_size + len)
+	for (i = data_size, prev_size = data_size, j = 0; i < MAX_SIZE; i++)
+	{
+		if(exists > 0 && j < len - 2 && buffer[j] == 'U' && buffer[j+1] == 'C' && buffer[j+2] == 'F')
+		{
+			int k = 0;
+			while(message[k] != '\0' && i < MAX_SIZE)
+			{
+				data[i] = message[k];
+				i++;
+				k++;
+				data_size++;
+				upper_lim++;
+			}
+			exists--;
+			i--;
+			j = j + 3;
+		}
+		else if (i >= prev_size + upper_lim)
+		{
 			data[i] = '\0';
-		else {
+		}
+		else
+		{
 			data[i] = buffer[j];
 			j++;
 			data_size++;
