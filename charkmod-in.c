@@ -135,7 +135,7 @@ static int close(struct inode *inodep, struct file *filep)
  */
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	int i, j, exists, prev_size;
+	int i, j, k, exists, prev_size, upper_limit;
 	char checker[3], temp[MAX_SIZE];
 
 	printk(KERN_INFO "charkmod-in: something wrote to device.\n");
@@ -160,42 +160,29 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 
 	printk(KERN_INFO "charkmod-in: there exist %d instances of \'UCF\' in the input.\n", exists);
 
-	// Sends message to kernel when there is less space than offered data
-	if (data_size + len > MAX_SIZE) {
-		printk(KERN_INFO "charkmod-in: not enough space! Dropping what's left.\n");
-	}
-
-	int upper_lim = len;
 	// Writes the data to the device
-	for (i = data_size, prev_size = data_size, j = 0; i < MAX_SIZE; i++)
-	{
-		if(exists > 0 && j < len - 2 && buffer[j] == 'U' && buffer[j+1] == 'C' && buffer[j+2] == 'F')
-		{
-			int k = 0;
-			while(message[k] != '\0' && i < MAX_SIZE)
-			{
+	for (i = data_size, prev_size = data_size, j = 0, upper_limit = len; i < MAX_SIZE; i++) {
+		if (i >= prev_size + upper_limit)
+			data[i] = '\0';
+		else if (j < len-2 && buffer[j] == 'U' && buffer[j+1] == 'C' && buffer[j+2] == 'F') {
+			for (k = 0; message[k] != '\0' && i < MAX_SIZE; i++, k++, data_size++, upper_limit++)
 				data[i] = message[k];
-				i++;
-				k++;
-				data_size++;
-				upper_lim++;
-			}
-			exists--;
 			i--;
 			j = j + 3;
+			upper_limit = upper_limit - 3;
 		}
-		else if (i >= prev_size + upper_lim)
-		{
-			data[i] = '\0';
-		}
-		else
-		{
+		else {
 			data[i] = buffer[j];
 			j++;
 			data_size++;
 		}
 	}
-
+	
+	// Sends message to kernel when there is less space than offered data
+	if (data_size == MAX_SIZE) {
+		printk(KERN_INFO "charkmod-in: not enough space! Dropping what's left.\n");
+	}
+	
 	// Returns the count of the number of bytes attempted to be written
 	return len;
 }
