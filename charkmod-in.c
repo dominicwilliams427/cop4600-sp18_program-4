@@ -88,7 +88,7 @@ int init_module(void)
 
 /*
  * Removes module, sends appropriate message to kernel
-*/
+ */
 void cleanup_module(void)
 {
 	printk(KERN_INFO "charkmod-in: removing module.\n");
@@ -103,7 +103,7 @@ void cleanup_module(void)
 
 /*
  * Opens device module, sends appropriate message to kernel
-*/
+ */
 static int open(struct inode *inodep, struct file *filep)
 {
 	if (!mutex_trylock(&buffer_mutex)) {
@@ -119,7 +119,7 @@ static int open(struct inode *inodep, struct file *filep)
 
 /*
  * Closes device module, sends appropriate message to kernel
-*/
+ */
 static int close(struct inode *inodep, struct file *filep)
 {
 	mutex_unlock(&buffer_mutex);
@@ -132,10 +132,10 @@ static int close(struct inode *inodep, struct file *filep)
 
 /*
  * Writes to the device
-*/
+ */
 static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	int i, j, exists;
+	int i, j, exists, prev_size;
 	char checker[3], temp[MAX_SIZE];
 	
 	printk(KERN_INFO "charkmod-in: something wrote to device.\n");
@@ -166,11 +166,12 @@ static ssize_t write(struct file *filep, const char *buffer, size_t len, loff_t 
 	}
 
 	// Writes the data to the device
-	for (i = data_size, j = 0; i < MAX_SIZE; i++) {
-		if (i >= data_size + len)
+	for (i = data_size, prev_size = data_size, j = 0; i < MAX_SIZE; i++) {
+		if (i >= prev_size + len)
 			data[i] = '\0';
 		else {
-			data[i] = buffer[i];
+			data[i] = buffer[j];
+			j++;
 			data_size++;
 		}
 	}
